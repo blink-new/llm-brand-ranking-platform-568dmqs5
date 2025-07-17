@@ -219,8 +219,11 @@ async function analyzeBrandAcrossLLMs(
   const platforms = ['ChatGPT', 'Claude', 'Gemini', 'Perplexity'];
   const platformLogos = { 'ChatGPT': '🤖', 'Claude': '🧠', 'Gemini': '✨', 'Perplexity': '🔍' };
   
+  // Generate the same queries used in brand analysis
+  const queries = generateQueries(brandName, industry, location, keywords);
+  
   const platformAnalyses = await Promise.all(
-    platforms.map(platform => analyzeBrandOnPlatform(brandName, websiteUrl, industry, platform, location, keywords, openaiApiKey))
+    platforms.map(platform => analyzeBrandOnPlatform(brandName, websiteUrl, industry, platform, location, keywords, openaiApiKey, queries))
   );
   
   // Calculate overall score as average of platform scores
@@ -242,6 +245,43 @@ async function analyzeBrandAcrossLLMs(
   };
 }
 
+function generateQueries(brandName: string, industry: string, location?: string, keywords?: string[]): string[] {
+  const baseQueries = [
+    `What are the best ${industry} companies?`,
+    `Top ${industry} brands to consider`,
+    `Leading ${industry} services`,
+    `Recommended ${industry} providers`,
+    `Best ${industry} solutions`
+  ];
+
+  if (location) {
+    baseQueries.push(
+      `Best ${industry} companies in ${location}`,
+      `Top ${industry} services in ${location}`,
+      `${location} ${industry} recommendations`
+    );
+  }
+
+  if (keywords && keywords.length > 0) {
+    keywords.forEach(keyword => {
+      baseQueries.push(
+        `Best companies for ${keyword}`,
+        `Top ${keyword} services`,
+        `${keyword} recommendations`
+      );
+    });
+  }
+
+  // Add direct brand queries
+  baseQueries.push(
+    `Tell me about ${brandName}`,
+    `${brandName} reviews and recommendations`,
+    `Is ${brandName} a good choice for ${industry}?`
+  );
+
+  return baseQueries;
+}
+
 async function analyzeBrandOnPlatform(
   brandName: string, 
   websiteUrl: string, 
@@ -249,23 +289,25 @@ async function analyzeBrandOnPlatform(
   platform: string, 
   location?: string, 
   keywords?: string[], 
-  openaiApiKey?: string
+  openaiApiKey?: string,
+  queries?: string[]
 ): Promise<LLMAnalysisResult> {
   
   try {
     const locationContext = location ? ` in ${location}` : '';
     const keywordContext = keywords && keywords.length > 0 ? ` Keywords: ${keywords.join(', ')}` : '';
+    const queryContext = queries ? `\n\nTest queries used:\n${queries.slice(0, 5).map((q, i) => `${i + 1}. ${q}`).join('\n')}` : '';
     
-    const prompt = `Analyze how well "${brandName}" (${websiteUrl}) would rank when users search for ${industry} solutions${locationContext} on ${platform}.
+    const prompt = `Analyze how well "${brandName}" (${websiteUrl}) would rank when users ask ${platform} about ${industry} solutions${locationContext}.
 
-Consider:
+Consider these factors:
 - Brand recognition and authority in ${industry}
 - Online presence and SEO strength
 - Content quality and relevance
 - User engagement and reviews
-- How likely ${platform} would recommend this brand${keywordContext}
+- How likely ${platform} would recommend this brand${keywordContext}${queryContext}
 
-Provide analysis in this JSON format:
+Provide realistic analysis in this JSON format:
 {
   "rank": 3,
   "score": 75,
@@ -276,12 +318,12 @@ Provide analysis in this JSON format:
 
 Where:
 - rank: 1-10 (null if not likely to be ranked in top 10)
-- score: 0-100 (overall strength score)
+- score: 0-100 (overall strength score based on brand authority, mentions, and ranking potential)
 - mentions: estimated monthly mentions in ${platform}
 - trend: "up", "down", or "stable"
 - reasoning: brief explanation
 
-Be realistic and base on actual brand strength indicators.`;
+Be realistic and base scores on actual brand strength indicators. Don't inflate scores.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

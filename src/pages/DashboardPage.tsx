@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { blink } from '../blink/client'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
@@ -51,6 +51,17 @@ export default function DashboardPage({ brandData, onBack, onViewCompetitors }: 
   const [isLoading, setIsLoading] = useState(true)
   const [rankings, setRankings] = useState<LLMRanking[]>([])
   const [overallScore, setOverallScore] = useState(0)
+  const [analyzedPrompts, setAnalyzedPrompts] = useState<string[]>([])
+
+  const getMockPrompts = useCallback((): string[] => [
+    `What are the best ${brandData.industry} companies?`,
+    `Top ${brandData.industry} brands to consider`,
+    `Leading ${brandData.industry} services`,
+    `Best ${brandData.industry} companies in ${brandData.location}`,
+    `Tell me about ${brandData.brandName}`,
+    `${brandData.brandName} reviews and recommendations`,
+    `Is ${brandData.brandName} a good choice for ${brandData.industry}?`
+  ], [brandData.industry, brandData.location, brandData.brandName])
 
   useEffect(() => {
     // Call backend to analyze brand rankings
@@ -81,30 +92,34 @@ export default function DashboardPage({ brandData, onBack, onViewCompetitors }: 
           if (result.success) {
             setRankings(result.rankings || [])
             setOverallScore(result.overallScore || 0)
+            setAnalyzedPrompts(result.analyzedPrompts || [])
           } else {
             console.error('Analysis failed:', result.message)
             // Fall back to mock data
             setRankings(getMockRankings())
             setOverallScore(67)
+            setAnalyzedPrompts(getMockPrompts())
           }
         } else {
           console.error('Failed to call analysis API')
           // Fall back to mock data on API failure
           setRankings(getMockRankings())
           setOverallScore(67)
+          setAnalyzedPrompts(getMockPrompts())
         }
       } catch (error) {
         console.error('Error during analysis:', error)
         // Fall back to mock data on error
         setRankings(getMockRankings())
         setOverallScore(67)
+        setAnalyzedPrompts(getMockPrompts())
       }
       
       setIsLoading(false)
     }
 
     analyzeRankings()
-  }, [brandData.brandName, brandData.competitorChoice, brandData.competitors, brandData.industry, brandData.keywords, brandData.location, brandData.websiteUrl])
+  }, [brandData.brandName, brandData.competitorChoice, brandData.competitors, brandData.industry, brandData.keywords, brandData.location, brandData.websiteUrl, getMockPrompts])
 
   const getMockRankings = (): LLMRanking[] => [
     {
@@ -519,6 +534,42 @@ export default function DashboardPage({ brandData, onBack, onViewCompetitors }: 
                 </Card>
               ))}
             </div>
+
+            {/* Analyzed Prompts Section */}
+            {analyzedPrompts.length > 0 && (
+              <Card className="glass-card border-0 hover:luxury-shadow transition-all duration-300">
+                <CardHeader>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-slate-500 to-slate-600 rounded-lg flex items-center justify-center">
+                      <AlertCircle className="h-4 w-4 text-white" />
+                    </div>
+                    <CardTitle className="text-xl font-serif">Analyzed Prompts</CardTitle>
+                  </div>
+                  <CardDescription>
+                    These are the queries we used to test your brand across all AI platforms
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {analyzedPrompts.slice(0, 8).map((prompt, index) => (
+                      <div key={index} className="flex items-start space-x-3 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200 hover:border-slate-300 transition-all duration-300">
+                        <div className="w-6 h-6 bg-gradient-to-r from-slate-500 to-slate-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-white text-xs font-bold">{index + 1}</span>
+                        </div>
+                        <p className="text-slate-700 font-medium leading-relaxed text-sm">"{prompt}"</p>
+                      </div>
+                    ))}
+                  </div>
+                  {analyzedPrompts.length > 8 && (
+                    <div className="mt-4 text-center">
+                      <Badge variant="secondary" className="px-3 py-1">
+                        +{analyzedPrompts.length - 8} more prompts analyzed
+                      </Badge>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Recent Activity & Insights */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

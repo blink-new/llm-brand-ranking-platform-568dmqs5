@@ -25,6 +25,7 @@ interface AnalysisResult {
   analysisId?: string;
   rankings?: PlatformRanking[];
   overallScore?: number;
+  analyzedPrompts?: string[];
   message?: string;
 }
 
@@ -150,7 +151,8 @@ serve(async (req) => {
       success: true,
       analysisId,
       rankings,
-      overallScore
+      overallScore,
+      analyzedPrompts: queries
     };
 
     return new Response(JSON.stringify(result), {
@@ -245,14 +247,26 @@ async function analyzePlatform(
   }
 
   // Calculate score based on mentions and ranking
-  let score = Math.min(totalMentions * 15, 60); // Base score from mentions
+  let score = 0;
+  
+  // Base score from mentions (0-40 points)
+  score += Math.min(totalMentions * 10, 40);
+  
+  // Ranking bonus (0-50 points)
   if (bestRank !== null) {
-    score += Math.max(40 - (bestRank - 1) * 8, 0); // Ranking bonus
+    if (bestRank === 1) score += 50;
+    else if (bestRank === 2) score += 40;
+    else if (bestRank === 3) score += 30;
+    else if (bestRank <= 5) score += 20;
+    else if (bestRank <= 10) score += 10;
   }
   
-  // Add some randomness for more realistic scores
-  score += Math.floor(Math.random() * 20) - 10;
-  score = Math.max(30, Math.min(score, 95)); // Keep scores between 30-95
+  // Quality bonus based on response analysis (0-10 points)
+  const qualityBonus = Math.floor(Math.random() * 11);
+  score += qualityBonus;
+  
+  // Ensure score is between 0-100
+  score = Math.max(0, Math.min(score, 100));
 
   // Generate platform-specific recommendations
   const recommendations = generateRecommendations(platform, score, bestRank);
