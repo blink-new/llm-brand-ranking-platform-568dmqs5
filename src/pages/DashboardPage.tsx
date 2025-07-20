@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Badge } from '../components/ui/badge'
 import { Progress } from '../components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu'
+import { Avatar, AvatarFallback } from '../components/ui/avatar'
 import { 
   BarChart3, 
   TrendingUp, 
@@ -22,7 +24,10 @@ import {
   Sparkles,
   Zap,
   Award,
-  Trophy
+  Trophy,
+  User,
+  LogOut,
+  Settings
 } from 'lucide-react'
 
 interface DashboardPageProps {
@@ -60,6 +65,7 @@ export default function DashboardPage({ brandData, onBack, onViewCompetitors }: 
   const [hasExistingAnalysis, setHasExistingAnalysis] = useState(false)
   const [isReanalyzing, setIsReanalyzing] = useState(false)
   const [usageInfo, setUsageInfo] = useState<any>(null)
+  const [user, setUser] = useState<any>(null)
 
   const getMockPrompts = useCallback((): string[] => [
     `What are the best ${brandData.industry} companies?`,
@@ -215,6 +221,19 @@ export default function DashboardPage({ brandData, onBack, onViewCompetitors }: 
     setIsLoading(false)
     setIsReanalyzing(false)
   }, [brandData, getMockPrompts, runCompetitorAnalysis])
+
+  // Get current user
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const currentUser = await blink.auth.me()
+        setUser(currentUser)
+      } catch (error) {
+        console.error('Error getting current user:', error)
+      }
+    }
+    getCurrentUser()
+  }, [])
 
   // Check for existing analysis on load
   useEffect(() => {
@@ -441,6 +460,45 @@ export default function DashboardPage({ brandData, onBack, onViewCompetitors }: 
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
+              
+              {/* User Menu */}
+              {user && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-slate-100 transition-all duration-300">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold">
+                          {user.email?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <div className="flex flex-col space-y-1 p-2">
+                      <p className="text-sm font-medium leading-none">{user.displayName || 'User'}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                      onClick={() => blink.auth.logout()}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Sign out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              
               <Button variant="ghost" onClick={onBack} className="flex items-center hover:bg-slate-100 transition-all duration-300">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back

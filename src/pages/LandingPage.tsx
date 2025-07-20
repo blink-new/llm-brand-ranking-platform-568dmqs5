@@ -79,7 +79,12 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 variant="outline" 
                 size="sm" 
                 className="border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-300"
-                onClick={() => alert('Sign in functionality would be implemented here')}
+                onClick={() => {
+                  // Import blink client and trigger login
+                  import('../blink/client').then(({ blink }) => {
+                    blink.auth.login()
+                  })
+                }}
               >
                 Sign In
               </Button>

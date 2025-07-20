@@ -74,6 +74,46 @@ function App() {
     )
   }
 
+  // If user is not authenticated, show sign in prompt
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="max-w-md w-full mx-4">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl blur opacity-75"></div>
+                <div className="relative bg-gradient-to-r from-indigo-500 to-purple-600 p-3 rounded-xl">
+                  <BarChart3 className="h-10 w-10 text-white" />
+                </div>
+              </div>
+              <span className="text-3xl font-serif font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                RankAI
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Welcome Back</h1>
+            <p className="text-slate-600">Sign in to access your brand analytics dashboard</p>
+          </div>
+          
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
+            <button
+              onClick={() => blink.auth.login()}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
+              Sign In with Blink
+            </button>
+            
+            <div className="mt-6 text-center">
+              <p className="text-sm text-slate-500">
+                New to RankAI? Your account will be created automatically.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {currentPage === 'landing' && (
