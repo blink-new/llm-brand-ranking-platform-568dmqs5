@@ -4,6 +4,7 @@ import LandingPage from './pages/LandingPage'
 import BrandSetupPage from './pages/BrandSetupPage'
 import DashboardPage from './pages/DashboardPage'
 import CompetitorAnalysisPage from './pages/CompetitorAnalysisPage'
+import { BarChart3 } from 'lucide-react'
 
 type Page = 'landing' | 'setup' | 'dashboard' | 'competitors'
 
@@ -26,12 +27,47 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const unsubscribe = blink.auth.onAuthStateChanged((state) => {
+    const unsubscribe = blink.auth.onAuthStateChanged(async (state) => {
       setUser(state.user)
       setLoading(state.isLoading)
+      
+      // If user just authenticated and we're on landing page, check for existing data
+      if (state.user && !state.isLoading && currentPage === 'landing') {
+        try {
+          // Check if user has any existing brand analyses
+          const existingAnalyses = await blink.db.brand_analyses.list({
+            where: { userId: state.user.id },
+            limit: 1
+          })
+          
+          if (existingAnalyses.length > 0) {
+            // User has existing data, load the most recent analysis
+            const latestAnalysis = existingAnalyses[0]
+            const brandData = {
+              websiteUrl: latestAnalysis.websiteUrl,
+              brandName: latestAnalysis.brandName,
+              email: state.user.email || '',
+              industry: latestAnalysis.industry,
+              location: latestAnalysis.location,
+              keywords: latestAnalysis.keywords || [],
+              competitors: latestAnalysis.competitors || [],
+              competitorChoice: latestAnalysis.competitorChoice as 'auto' | 'manual'
+            }
+            setBrandData(brandData)
+            setCurrentPage('dashboard')
+          } else {
+            // No existing data, go to setup
+            setCurrentPage('setup')
+          }
+        } catch (error) {
+          console.error('Error checking existing analyses:', error)
+          // On error, just go to setup
+          setCurrentPage('setup')
+        }
+      }
     })
     return unsubscribe
-  }, [])
+  }, [currentPage])
 
   const handleGetStarted = (url: string) => {
     setWebsiteUrl(url)

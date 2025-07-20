@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { blink } from '../blink/client'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Card, CardContent } from '../components/ui/card'
@@ -12,6 +13,14 @@ interface LandingPageProps {
 export default function LandingPage({ onGetStarted }: LandingPageProps) {
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    const unsubscribe = blink.auth.onAuthStateChanged((state) => {
+      setUser(state.user)
+    })
+    return unsubscribe
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -75,19 +84,28 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 Pricing
               </a>
 
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-300"
-                onClick={() => {
-                  // Import blink client and trigger login
-                  import('../blink/client').then(({ blink }) => {
-                    blink.auth.login()
-                  })
-                }}
-              >
-                Sign In
-              </Button>
+              {user ? (
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-slate-600">Welcome back, {user.email}</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="border-slate-200 hover:border-red-300 hover:bg-red-50 transition-all duration-300"
+                    onClick={() => blink.auth.logout()}
+                  >
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-300"
+                  onClick={() => blink.auth.login()}
+                >
+                  Sign In
+                </Button>
+              )}
             </nav>
           </div>
         </div>
