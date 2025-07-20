@@ -54,13 +54,11 @@ class AnalysisService {
     
     const analyses = await blink.db.brandAnalyses.list({
       where: {
-        AND: [
-          { userId: user.id },
-          { website },
-          { brandName },
-          { industry },
-          { location: location || '' }
-        ]
+        userId: user.id,
+        website,
+        brandName,
+        industry,
+        location: location || ''
       },
       orderBy: { createdAt: 'desc' },
       limit: 1
@@ -250,10 +248,8 @@ class AnalysisService {
   ): Promise<CompetitorAnalysisResult | null> {
     const competitors = await blink.db.competitorAnalyses.list({
       where: {
-        AND: [
-          { brandAnalysisId },
-          { competitorWebsite }
-        ]
+        brandAnalysisId,
+        competitorWebsite
       },
       limit: 1
     })
@@ -347,10 +343,8 @@ class AnalysisService {
     // Get all analyses for this website
     const analyses = await blink.db.brandAnalyses.list({
       where: {
-        AND: [
-          { userId: user.id },
-          { website }
-        ]
+        userId: user.id,
+        website
       }
     })
 
